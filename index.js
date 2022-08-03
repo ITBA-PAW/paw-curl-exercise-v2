@@ -41,7 +41,7 @@ app.get('/random_header', (req, res) => {
 app.post('/name', [authMiddleware], (req, res) => {
   if (!req.body || !req.body.name) {
     res.status(400)
-    res.json({ error: '"name" param missing' })
+    res.json({ error: '"name" field missing' })
   } else {
     names.push(req.body.name)
     res.status(200)
