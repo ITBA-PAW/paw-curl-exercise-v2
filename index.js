@@ -33,6 +33,10 @@ app.use((req, res, next) => {
   next()
 })
 
+app.get('/', (req, res) => {
+    res.json('Hello paw student! We expect students to POST their names at /names')
+})
+
 app.get('/random_headers', (req, res) => {
   const header = headers[Math.floor(Math.random() * headers.length)]
   res.json(`Hello paw student. Your Authorization header is: ${header}`)
@@ -65,5 +69,5 @@ app.use((req, res) => {
 
 app.listen(port, () => {
   console.log(`PAW CURL exercise listening at port: ${port}.`)
-  console.log('We expect students to POST their names at /name')
+  console.log('We expect students to POST their names at /names')
 })
