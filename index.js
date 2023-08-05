@@ -33,12 +33,12 @@ app.use((req, res, next) => {
   next()
 })
 
-app.get('/random_header', (req, res) => {
+app.get('/random_headers', (req, res) => {
   const header = headers[Math.floor(Math.random() * headers.length)]
-  res.send(`Hello paw student. Your Authorization header is: ${header}`)
+  res.json(`Hello paw student. Your Authorization header is: ${header}`)
 })
 
-app.post('/name', [authMiddleware], (req, res) => {
+app.post('/names', [authMiddleware], (req, res) => {
   if (!req.body || !req.body.name) {
     res.status(400)
     res.json({ error: '"name" field missing' })
