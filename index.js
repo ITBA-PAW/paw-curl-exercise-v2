@@ -57,7 +57,7 @@ app.get('/names', (req, res, next) => {
   if (req.header('paw-secret') != process.env.SECRET) {
     next()
   } else {
-    res.status(200)
+    res.status(201)
     res.json({ names })
   }
 })
