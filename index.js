@@ -25,7 +25,7 @@ const authMiddleware = (req, res, next) => {
     return next()
   }
   res.status(401)
-  res.json({ error: 'Invalid Authorization header. You can get one at /random_header' })
+  res.json({ error: 'Invalid Authorization header. You can get one at /random_headers' })
 }
 
 app.use((req, res, next) => {
