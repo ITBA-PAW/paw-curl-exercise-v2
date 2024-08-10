@@ -5,6 +5,12 @@ const swaggerDocument = require('./swagger.json');
 
 const app = express()
 const port = process.env.PORT || 3000
+const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css"
+const options = {
+    customCss:
+        '.swagger-ui .opblock .opblock-summary-path-description-wrapper { align-items: center; display: flex; flex-wrap: wrap; gap: 0 10px; padding: 0 10px; width: 100%; }',
+    customCssUrl: CSS_URL,
+};
 
 const groupsQty = 9
 const styles = new Array(groupsQty).fill("")
@@ -23,7 +29,7 @@ app.get('/', (req, res) => {
     res.json('Hello paw student! We expect students to POST their styles at /styles')
 })
 
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, options));
 
 app.post('/styles', (req, res) => {
   if (!req.body) {
