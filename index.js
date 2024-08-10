@@ -1,32 +1,18 @@
 const express = require('express')
 const bodyParser = require('body-parser')
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
 
 const app = express()
 const port = process.env.PORT || 3000
 
-const headers = [
-  ">,MqBuN?$uS&+v:|t/2Yesgt4JJC,@",
-  "mv{MBiZJc0TJ|C()c(xlD[s$Q,~f)B",
-  "xPDVUk!Ib@l[a]r%T~~%iL#C`>,4-A",
-  "y^D(*Rj?a(-D33G#rZM9K@asTW3V={"
-]
-
-const names = []
+const groupsQty = 9
+const styles = new Array(groupsQty).fill("")
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }))
 // parse application/json
 app.use(bodyParser.json())
-
-
-const authMiddleware = (req, res, next) => {
-  const header = req.header('Authorization')
-  if (header && headers.includes(header)) {
-    return next()
-  }
-  res.status(401)
-  res.json({ error: 'Invalid Authorization header. You can get one at /random_headers' })
-}
 
 app.use((req, res, next) => {
   console.log(`${req.method} @ ${req.path}`)
@@ -34,32 +20,52 @@ app.use((req, res, next) => {
 })
 
 app.get('/', (req, res) => {
-    res.json('Hello paw student! We expect students to POST their names at /names')
+    res.json('Hello paw student! We expect students to POST their styles at /styles')
 })
 
-app.get('/random_headers', (req, res) => {
-  const header = headers[Math.floor(Math.random() * headers.length)]
-  res.json(`Hello paw student. Your Authorization header is: ${header}`)
-})
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.post('/names', [authMiddleware], (req, res) => {
-  if (!req.body || !req.body.name) {
+app.post('/styles', (req, res) => {
+  if (!req.body) {
     res.status(400)
-    res.json({ error: '"name" field missing' })
-  } else {
-    names.push(req.body.name)
-    res.status(200)
-    res.json({ message: `Position ${names.length}` })
+    return res.json({
+      error: 'Missing body. Try with \{"group": 1, "style": "..."\}'
+    })
   }
+  if (!req.body.group || isNaN(req.body.group) || req.body.group < 1 || req.body.group > groupsQty) {
+    res.status(400)
+    return res.json({
+      error: 'Missing or invalid group.'
+    })
+  }
+  if (!req.body.style) {
+      res.status(400)
+      return res.json({
+      error: 'Missing style.'
+      })
+  }
+
+  styles[req.body.group - 1] = req.body.style
+  res.status(201)
+  return res.json({ style: req.body.style, group: req.body.group })
 })
 
-app.get('/names', (req, res, next) => {
-  if (req.header('paw-secret') != process.env.SECRET) {
-    next()
-  } else {
-    res.status(201)
-    res.json({ names })
-  }
+app.get('/styles', (req, res, next) => {
+  res.status(201)
+  const body = styles.map((style, index) => {
+      return {group: index + 1, style: style ?? ""}
+  })
+  return res.json(body)
+})
+
+app.get('/styles/:group', (req, res) => {
+    const group = parseInt(req.params.group)
+    if (isNaN(group) || group < 1 || group > groupsQty) {
+        res.status(400)
+        return res.json({ error: 'Invalid group' })
+    }
+    const style = styles[group-1] ?? ""
+    res.json({ style: style, group })
 })
 
 app.use((req, res) => {
@@ -69,5 +75,5 @@ app.use((req, res) => {
 
 app.listen(port, () => {
   console.log(`PAW CURL exercise listening at port: ${port}.`)
-  console.log('We expect students to POST their names at /names')
+  console.log('We expect students to POST their styles at /styles')
 })

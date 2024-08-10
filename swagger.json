@@ -1,0 +1,159 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PAW API",
+    "description": "PAW",
+    "contact": {
+      "name": "",
+      "url": ""
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.juarce.com",
+      "description": "Production server"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local server"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "style": {
+        "type": "ObjectDto",
+        "properties": {
+          "group": {
+            "type": "integer"
+          },
+          "style": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "group",
+          "style"
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/styles": {
+      "get": {
+        "tags": [
+          "Styles"
+        ],
+        "summary": "Get all styles",
+        "operationId": "getStyles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/style"
+                  }
+                },
+                "examples": {
+                  "List of styles": {
+                    "value": [
+                      {
+                        "group": 1,
+                        "style": "color: blue;text-align: center;"
+                      },
+                      {
+                        "group": 2,
+                        "style": "color: red;text-align: center;"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Styles"
+        ],
+        "summary": "Create a style",
+        "operationId": "createStyle",
+        "requestBody": {
+          "description": "Style to  create.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/style"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/style"
+                },
+                "examples": {
+                  "Style": {
+                    "value": {
+                      "group": 1,
+                      "style": "color: blue;text-align: center;"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/styles/{group}": {
+      "get": {
+        "tags": [
+          "Style"
+        ],
+        "summary": "Get style for specific group",
+        "operationId": "getStyle",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "path",
+            "description": "Group number",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/style"
+                },
+                "examples": {
+                  "Style": {
+                    "value": {
+                      "group": 1,
+                      "style": "color: blue;text-align: center;"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
