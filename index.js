@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
     res.json('Hello paw student! We expect students to POST their styles at /styles')
 })
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.post('/styles', (req, res) => {
   if (!req.body) {
