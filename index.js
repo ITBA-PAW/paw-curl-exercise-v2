@@ -74,7 +74,7 @@ app.post('/styles', async (req, res) => {
     `;
 
     res.status(status.CREATED);
-    return res.json({ style: result[0].style, group: result[0].group_number });
+    return res.json({group: result[0].group_number, style: result[0].style });
   } catch (error) {
     console.error(error);
     res.status(status.INTERNAL_SERVER_ERROR);
@@ -85,7 +85,9 @@ app.post('/styles', async (req, res) => {
 app.get('/styles', async (req, res) => {
   try {
     const result = await sql`
-      SELECT group_number, style FROM styles ORDER BY group_number
+        SELECT group_number AS "group", style
+        FROM styles
+        ORDER BY group_number
     `;
 
     res.status(status.OK);
@@ -107,7 +109,9 @@ app.get('/styles/:group', async (req, res) => {
     }
 
     const result = await sql`
-      SELECT group_number, style FROM styles WHERE group_number = ${group}
+      SELECT group_number, style 
+      FROM styles 
+      WHERE group_number = ${group}
     `;
 
     if (result.length === 0) {
@@ -116,7 +120,7 @@ app.get('/styles/:group', async (req, res) => {
     }
 
     res.status(status.OK);
-    return res.json(result[0]);
+    return res.json({ group: result[0].group_number, style: result[0].style });
   } catch (error) {
     console.error(error);
     res.status(status.INTERNAL_SERVER_ERROR);
