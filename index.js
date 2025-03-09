@@ -1,8 +1,12 @@
+require('dotenv').config()
+
 const express = require('express')
 const cors = require('cors')
 const bodyParser = require('body-parser')
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
+const postgres = require('postgres')
+const status = require('http-status-codes')
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -13,8 +17,8 @@ const options = {
     customCssUrl: CSS_URL,
 };
 
-const groupsQty = 9
-const styles = new Array(groupsQty).fill("")
+const groupsQty = process.env.GROUPS_QTY
+const sql = postgres(process.env.DB_URL)
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -34,51 +38,94 @@ app.get('/', (req, res) => {
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, options));
 
-app.post('/styles', (req, res) => {
-  if (!req.body) {
-    res.status(400)
-    return res.json({
-      error: 'Missing body. Try with \{"group": 1, "style": "..."\}'
-    })
-  }
-  if (!req.body.group || isNaN(req.body.group) || req.body.group < 1 || req.body.group > groupsQty) {
-    res.status(400)
-    return res.json({
-      error: 'Missing or invalid group.'
-    })
-  }
-  if (!req.body.style) {
-      res.status(400)
+app.post('/styles', async (req, res) => {
+  try {
+    if (!req.body) {
+      res.status(status.BAD_REQUEST);
       return res.json({
-      error: 'Missing style.'
-      })
-  }
-
-  styles[req.body.group - 1] = req.body.style
-  res.status(201)
-  return res.json({ style: req.body.style, group: req.body.group })
-})
-
-app.get('/styles', (req, res, next) => {
-  res.status(201)
-  const body = styles.map((style, index) => {
-      return {group: index + 1, style: style ?? ""}
-  })
-  return res.json(body)
-})
-
-app.get('/styles/:group', (req, res) => {
-    const group = parseInt(req.params.group)
-    if (isNaN(group) || group < 1 || group > groupsQty) {
-        res.status(400)
-        return res.json({ error: 'Invalid group' })
+        error: 'Missing body. Try with {"group": 1, "style": "..."}'
+      });
     }
-    const style = styles[group-1] ?? ""
-    res.json({ style: style, group })
-})
+
+    if (!req.body.group || isNaN(req.body.group) || req.body.group < 1 || req.body.group > groupsQty) {
+      res.status(status.BAD_REQUEST);
+      return res.json({
+        error: 'Missing or invalid group.'
+      });
+    }
+
+    if (!req.body.style) {
+      res.status(status.BAD_REQUEST);
+      return res.json({
+        error: 'Missing style.'
+      });
+    }
+
+    const group = parseInt(req.body.group);
+    const style = req.body.style;
+    console.log(`Group: ${group}, Style: ${style}`);
+
+    const result = await sql`
+      INSERT INTO styles (group_number, style) 
+      VALUES (${group}, ${style}) 
+      ON CONFLICT (group_number) 
+      DO UPDATE SET style = ${style} 
+      RETURNING *
+    `;
+
+    res.status(status.CREATED);
+    return res.json({ style: result[0].style, group: result[0].group_number });
+  } catch (error) {
+    console.error(error);
+    res.status(status.INTERNAL_SERVER_ERROR);
+    return res.json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/styles', async (req, res) => {
+  try {
+    const result = await sql`
+      SELECT group_number, style FROM styles ORDER BY group_number
+    `;
+
+    res.status(status.OK);
+    return res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(status.INTERNAL_SERVER_ERROR);
+    return res.json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/styles/:group', async (req, res) => {
+  try {
+    const group = parseInt(req.params.group);
+
+    if (isNaN(group) || group < 1 || group > groupsQty) {
+      res.status(status.BAD_REQUEST);
+      return res.json({ error: 'Invalid group' });
+    }
+
+    const result = await sql`
+      SELECT group_number, style FROM styles WHERE group_number = ${group}
+    `;
+
+    if (result.length === 0) {
+      res.status(status.NOT_FOUND);
+      return res.json({ error: 'Group not found' });
+    }
+
+    res.status(status.OK);
+    return res.json(result[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(status.INTERNAL_SERVER_ERROR);
+    return res.json({ error: 'Internal server error' });
+  }
+});
 
 app.use((req, res) => {
-  res.status(404)
+  res.status(status.NOT_FOUND)
   res.json({ message: 'Nothing here!' })
 })
 
