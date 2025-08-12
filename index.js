@@ -7,14 +7,15 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
 const postgres = require('postgres')
 const status = require('http-status-codes')
+const css = require('css');
 
 const app = express()
 const port = process.env.PORT || 3000
 const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css"
 const options = {
-    customCss:
-        '.swagger-ui .opblock .opblock-summary-path-description-wrapper { align-items: center; display: flex; flex-wrap: wrap; gap: 0 10px; padding: 0 10px; width: 100%; }',
-    customCssUrl: CSS_URL,
+  customCss:
+    '.swagger-ui .opblock .opblock-summary-path-description-wrapper { align-items: center; display: flex; flex-wrap: wrap; gap: 0 10px; padding: 0 10px; width: 100%; }',
+  customCssUrl: CSS_URL,
 };
 
 const groupsQty = process.env.GROUPS_QTY
@@ -33,7 +34,7 @@ app.use((req, res, next) => {
 })
 
 app.get('/', (req, res) => {
-    res.json('Hello paw student! We expect students to POST their styles at /styles')
+  res.json('Hello paw student! We expect students to POST their styles at /styles')
 })
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, options));
@@ -63,6 +64,46 @@ app.post('/styles', async (req, res) => {
 
     const group = parseInt(req.body.group);
     const style = req.body.style;
+
+    // Validate CSS declarations
+    // Wrap the style in a dummy rule to parse with css package
+    const cssWrapper = `selector { ${style} }`;
+    let ast;
+    try {
+      ast = css.parse(cssWrapper);
+    } catch (error) {
+      console.error('CSS parsing error:', error.message);
+      res.status(status.BAD_REQUEST);
+      return res.json({
+        error: 'Invalid CSS declarations provided.'
+      });
+    }
+
+    // List of restricted CSS properties
+    const restrictedProperties = ['transform', 'rotate', 'scale', 'translate']
+
+    // Check for restricted properties in the AST
+    let invalidProperties = [];
+    if (ast.stylesheet && ast.stylesheet.rules) {
+      ast.stylesheet.rules.forEach(rule => {
+        if (rule.type === 'rule' && rule.declarations) {
+          rule.declarations.forEach(declaration => {
+            if (restrictedProperties.includes(declaration.property)) {
+              invalidProperties.push(declaration.property);
+            }
+          });
+        }
+      });
+    }
+
+    // If restricted properties are found, return an error
+    if (invalidProperties.length > 0) {
+      res.status(status.BAD_REQUEST);
+      return res.json({
+        error: `The following CSS properties are not allowed: ${invalidProperties.join(', ')}`
+      });
+    }
+
     console.log(`Group: ${group}, Style: ${style}`);
 
     const result = await sql`
@@ -109,9 +150,9 @@ app.get('/styles/:group', async (req, res) => {
     }
 
     const result = await sql`
-      SELECT group_number, style 
-      FROM styles 
-      WHERE group_number = ${group}
+        SELECT group_number, style
+        FROM styles
+        WHERE group_number = ${group}
     `;
 
     if (result.length === 0) {
